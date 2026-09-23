@@ -1,0 +1,67 @@
+name: main Spring boilerplate
+on:
+  push:
+    branches: ['main']
+  pull_request:
+  workflow_dispatch:
+
+env:
+  PROJECT_DIR: ${{ github.workspace }}/api
+  MAVEN_OPTS: "-Djava.awt.headless=true"
+  MAVEN_CLI_OPTS: "--batch-mode --fail-at-end"
+
+jobs:
+
+#######################################################
+
+  unit-tests:
+    name: Unit Tests
+    runs-on: ubuntu-20.04
+    defaults:
+      run:
+        shell: bash
+        working-directory: ${{ env.PROJECT_DIR }}
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: "0" # Needed for git metadata embedded in jar
+
+      - name: Detect git paths casing issues
+        working-directory: ${{ github.workspace }}
+        run:  bash "${{ github.workspace }}/.ci/scripts/detect-case-sensitivity-issues-in-paths.sh"
+
+      - name: Setup Maven
+        id: setup-maven
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          cache: 'maven'
+
+      - name: Download all dependencies
+        if: steps.setup-maven.outputs.cache-hit != 'true'
+        run: |
+          cd $PROJECT_DIR
+          ./mvnw $MAVEN_CLI_OPTS dependency:resolve-plugins dependency:go-offline de.qaware.maven:go-offline-maven-plugin:resolve-dependencies
+
+      - name: Run unit tests
+        run:  ./mvnw $MAVEN_CLI_OPTS clean verify
+
+      - name: Upload jar artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: api-jar-artifact
+          retention-days: "1"
+          path: |
+            ${{ env.PROJECT_DIR }}/target/*.jar
+
+      - name: Add coverage to PR
+        if: github.event_name == 'pull_request'
+        uses: madrapps/jacoco-report@v1.2
+        continue-on-error: true
+        with:
+          paths: ${{ env.PROJECT_DIR }}/target/site/jacoco/jacoco.xml
+          token: ${{ github.token }}
+          min-coverage-overall: "40"
+          min-coverage-changed-files: "60"

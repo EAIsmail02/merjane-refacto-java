@@ -1,0 +1,30 @@
+spring:
+  liquibase:
+    enabled: false
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate.format_sql: true
+  main:
+    banner-mode: off
+
+security:
+  jwt:
+    secret: ${JWT_SECRET:zdtlD3JK56m6wTTgsNFhqzjqP}
+    issuer: ${JWT_ISSUER:nimbleways}
+
+server:
+  servlet:
+    context-path: /api
+
+logging:
+  level:
+    org.springframework: ERROR
+    root: ERROR
+
+retrofit:
+  posts:
+    base-url: https://jsonplaceholder.typicode.com
