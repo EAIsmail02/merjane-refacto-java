@@ -4,8 +4,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 
-public class TestUtils {
-    public TestUtils() {
+public final class TestUtils {
+    private TestUtils() {
     }
 
     public static String readJsonFile(String fileName, Class<?> testClass) {
